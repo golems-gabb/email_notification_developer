@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * @file
+ * Contains install and uninstall functions for Email notification developer.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function email_notification_developer_install() {
+  global $base_url;
+  $domain = preg_replace('/https*\:\/\//', '', $base_url);
+  if (!empty($domain)) {
+    variable_set('email_notification_developer_list_domain', $domain);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function email_notification_developer_uninstall() {
+  $array_variables = array(
+    'emails_list_error',
+    'period',
+    'activate_error',
+    'emails_list_domain',
+    'list_domain',
+    'activate_domain',
+  );
+  foreach ($array_variables as $variable) {
+    variable_del('email_notification_developer_' . $variable);
+  }
+}
