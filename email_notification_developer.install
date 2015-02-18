@@ -22,7 +22,9 @@ function email_notification_developer_install() {
 function email_notification_developer_uninstall() {
   $array_variables = array(
     'emails_list_error',
-    'period',
+    'period_emails',
+    'period_domain',
+    'cron_last',
     'activate_error',
     'emails_list_domain',
     'list_domain',

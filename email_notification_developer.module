@@ -38,12 +38,27 @@ function email_notification_developer_menu() {
  */
 function email_notification_developer_form_alter(&$form, &$form_state, $form_id) {
   if (!empty($form_id) && $form_id == 'system_cron_settings') {
-    $period = variable_get('email_notification_developer_period', 0);
-    if (!empty($form['cron']['cron_safe_threshold']['#options']) && !empty($period)) {
-      $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
-        array(3600 * $period),
-        'format_interval'
-      );
+    $period_domain = variable_get(
+      'email_notification_developer_period_domain',
+      0
+    );
+    $period_emails = variable_get(
+      'email_notification_developer_period_emails',
+      0
+    );
+    if (!empty($form['cron']['cron_safe_threshold']['#options']) && (!empty($period_domain) || $period_emails)) {
+      if (!empty($period_domain)) {
+        $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
+          array(3600 * $period_domain),
+          'format_interval'
+        );
+      }
+      if (!empty($period_emails)) {
+        $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
+          array(3600 * $period_emails),
+          'format_interval'
+        );
+      }
       ksort($form['cron']['cron_safe_threshold']['#options']);
       reset($form['cron']['cron_safe_threshold']['#options']);
     }
@@ -54,28 +69,53 @@ function email_notification_developer_form_alter(&$form, &$form_state, $form_id)
  * Implements hook_cron().
  */
 function email_notification_developer_cron() {
-  $cron_last = variable_get('cron_last', 0);
-  $period = variable_get('email_notification_developer_period', 0);
-  if (!empty($cron_last) && !empty($period)) {
-    $end = date('Y-m-d H:i:s', $cron_last);
-    $begin = new DateTime($end);
-    if (!empty($begin) && is_object($begin)) {
-      $begin = $begin->modify('+' . $period . ' minute');
-      if (!empty($begin->date)) {
-        $start_date = $begin->date;
-      }
+  $activate_domain = variable_get(
+    'email_notification_developer_activate_domain',
+    0
+  );
+  $activate_error = variable_get(
+    'email_notification_developer_activate_error',
+    0
+  );
+  if (!empty($activate_domain) || !empty($activate_error)){
+    $module_cron_last = variable_get('email_notification_developer_cron_last', 0);
+    if (empty($module_cron_last)){
+      variable_set('email_notification_developer_cron_last', time());
+      email_notification_developer_check_errors();
+      email_notification_developer_check_domain();
     }
     else {
-      $start_date = date('Y-m-d H:i:s', $cron_last + $period * 3600);
-    }
-    if (!empty($start_date) && $start_date <= date('Y-m-d H:i:s', (time()))) {
-      $activate_domain = variable_get('email_notification_developer_activate_domain', 0);
-      $activate_error = variable_get('email_notification_developer_activate_error', 0);
-      if (!empty($activate_error)) {
-        email_notification_developer_check_errors();
-      }
-      if (!empty($activate_domain)) {
-        email_notification_developer_check_domain();
+      $p_domain = variable_get('email_notification_developer_period_domain', 0);
+      $p_error = variable_get('email_notification_developer_period_emails', 0);
+      if (!empty($module_cron_last) && (!empty($p_domain) || !empty($p_error))) {
+        $end = date('Y-m-d H:i:s', $module_cron_last);
+        $begin = new DateTime($end);
+        if (!empty($begin) && is_object($begin)) {
+          $begin_domain = $begin->modify('+' . $p_domain . ' minute');
+          $begin_error = $begin->modify('+' . $p_error . ' minute');
+          if (!empty($begin_domain->date)) {
+            $start_date_domain = $begin_domain->date;
+          }
+          if (!empty($begin_error->date)) {
+            $start_date_error = $begin_error->date;
+          }
+        }
+        else {
+          $start_date_domain = date(
+            'Y-m-d H:i:s',
+            $module_cron_last + $p_domain * 3600
+          );
+          $start_date_error = date(
+            'Y-m-d H:i:s',
+            $module_cron_last + $p_error * 3600
+          );
+        }
+        if (!empty($start_date_error) && !empty($activate_error)) {
+          email_notification_developer_run_newsletter($start_date_error, 'e');
+        }
+        if (!empty($start_date_domain) && !empty($activate_domain)) {
+          email_notification_developer_run_newsletter($start_date_domain, 'd');
+        }
       }
     }
   }
@@ -84,14 +124,24 @@ function email_notification_developer_cron() {
 /**
  * Callback email_notification_developer_config_domain().
  */
-function email_notification_developer_config_domain($form, &$form_state) {
+function email_notification_developer_config_domain($form, &$form_state) {  
+  global $base_root;
   $form = array();
+  $url_cron = $base_root . '/admin/config/system/cron';
   $form['email_notification_developer_activate_domain'] = array(
     '#type' => 'checkbox',
     '#title' => t('Activate functionality'),
     '#return_value' => 1,
     '#default_value' => variable_get('email_notification_developer_activate_domain', 0),
     '#description' => t('Activate functionality for Email notification of change of domain.'),
+  );
+  $form['email_notification_developer_period_domain'] = array(
+    '#type' => 'textfield',
+    '#title' => t('The period of inspection'),
+    '#required' => TRUE,
+    '#default_value' => variable_get('email_notification_developer_period_domain', 0),
+    '#element_validate' => array('email_notification_developer_validate_period'),
+    '#description' => t('Because time  (in hours - integer) is done sending errors (for activation of the switch and set the period during crown here: <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks  (ie 10 days - 1 week 3 days)). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
   );
   $form['email_notification_developer_list_domain'] = array(
     '#type' => 'textarea',
@@ -126,11 +176,11 @@ function email_notification_developer_config_error() {
     '#default_value' => variable_get('email_notification_developer_activate_error', 0),
     '#description' => t('Activate message to Email functionality of PHP errors on the site.'),
   );
-  $form['email_notification_developer_period'] = array(
+  $form['email_notification_developer_period_emails'] = array(
     '#type' => 'textfield',
     '#title' => t('The period of inspection'),
     '#required' => TRUE,
-    '#default_value' => variable_get('email_notification_developer_period', 0),
+    '#default_value' => variable_get('email_notification_developer_period_emails', 0),
     '#element_validate' => array('email_notification_developer_validate_period'),
     '#description' => t('Because time  (in hours - integer) is done sending errors (for activation of the switch and set the period during crown here: <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks  (ie 10 days - 1 week 3 days)). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
   );
@@ -156,31 +206,23 @@ function email_notification_developer_validate_email($element, &$form_state, $fo
         $email_isset = trim($email);
         if (!empty($email_isset)) {
           if ($email_isset != $email) {
-            $error = TRUE;
-            $text = 'Remove spaces.';
+            form_error($element, t('Remove spaces.'));
           }
           elseif (!valid_email_address($email)) {
-            $error = TRUE;
-            $text = 'Please enter a valid email address.';
+            form_error($element, t('Please enter a valid email address.'));
           }
         }
         else {
-          $error = TRUE;
-          $text = 'Remove the empty string.';
+          form_error($element, t('Remove the empty string.'));
         }
       }
     }
     else {
-      $error = TRUE;
-      $text = 'Maximum 10 email adresses to send.';
+      form_error($element, t('Maximum 10 email adresses to send.'));
     }
   }
   else {
-    $error = TRUE;
-    $text = 'Remove duplicates.';
-  }
-  if (!empty($error)) {
-    form_error($element, t($text));
+    form_error($element, t('Remove duplicates.'));
   }
 }
 
@@ -197,26 +239,19 @@ function email_notification_developer_validate_domain($element, &$form_state, $f
       $domain_isset = trim($domain);
       if (!empty($domain_isset)) {
         if ($domain_isset != $domain) {
-          $error = TRUE;
-          $text = 'Remove spaces.';
+          form_error($element, t('Remove spaces.'));
         }
         elseif (!preg_match($reg, $domain)) {
-          $error = TRUE;
-          $text = 'Please enter a valid domain.';
+          form_error($element, t('Please enter a valid domain.'));
         }
       }
       else {
-        $error = TRUE;
-        $text = 'Remove the empty string.';
+        form_error($element, t('Remove the empty string.'));
       }
     }
   }
   else {
-    $error = TRUE;
-    $text = 'Remove duplicates.';
-  }
-  if (!empty($error)) {
-    form_error($element, t($text));
+    form_error($element, t('Remove duplicates.'));
   }
 }
 
@@ -226,12 +261,11 @@ function email_notification_developer_validate_domain($element, &$form_state, $f
 function email_notification_developer_validate_period($element, &$form_state, $form) {
   if (!preg_match('/^\d+$/i', $element['#value']) || $element['#value'] * 60 > 2592000) {
     if ($element['#value'] * 60 > 2592000) {
-      $text = 'Introduced during 30 days';
+      form_error($element, t('Introduced during 30 days.'));
     }
     else {
-      $text = 'The value of the field can only be a positive numeric field.';
+      form_error($element, t('The value of the field can only be a positive numeric field.'));
     }
-    form_error($element, t($text));
   }
 }
 
@@ -305,6 +339,21 @@ function email_notification_developer_check_errors() {
           ));
         }
       }
+    }
+  }
+}
+
+/**
+ * Function email_notification_developer_run_newsletter().
+ */
+function email_notification_developer_run_newsletter($start_date, $qualifier) {
+  if (!empty($start_date) && $start_date <= date('Y-m-d H:i:s', (time()))) {
+    variable_set('email_notification_developer_cron_last', time());
+    if ($qualifier == 'e') {
+      email_notification_developer_check_errors();
+    }
+    if ($qualifier == 'd') {
+      email_notification_developer_check_domain();
     }
   }
 }
