@@ -77,9 +77,9 @@ function email_notification_developer_cron() {
     'email_notification_developer_activate_error',
     0
   );
-  if (!empty($activate_domain) || !empty($activate_error)){
+  if (!empty($activate_domain) || !empty($activate_error)) {
     $module_cron_last = variable_get('email_notification_developer_cron_last', 0);
-    if (empty($module_cron_last)){
+    if (empty($module_cron_last)) {
       variable_set('email_notification_developer_cron_last', time());
       email_notification_developer_check_errors();
       email_notification_developer_check_domain();
@@ -124,7 +124,7 @@ function email_notification_developer_cron() {
 /**
  * Callback email_notification_developer_config_domain().
  */
-function email_notification_developer_config_domain($form, &$form_state) {  
+function email_notification_developer_config_domain($form, &$form_state) {
   global $base_root;
   $form = array();
   $url_cron = $base_root . '/admin/config/system/cron';
