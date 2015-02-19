@@ -141,7 +141,7 @@ function email_notification_developer_config_domain($form, &$form_state) {
     '#required' => TRUE,
     '#default_value' => variable_get('email_notification_developer_period_domain', 0),
     '#element_validate' => array('email_notification_developer_validate_period'),
-    '#description' => t('Because time  (in hours - integer) is done sending errors (for activation of the switch and set the period during crown here: <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks  (ie 10 days - 1 week 3 days)). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
+    '#description' => t('Period (given in hours) at which will trigger functionality. This period will be available <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks (ie 10 days - 1 week 3 days). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
   );
   $form['email_notification_developer_list_domain'] = array(
     '#type' => 'textarea',
@@ -182,7 +182,7 @@ function email_notification_developer_config_error() {
     '#required' => TRUE,
     '#default_value' => variable_get('email_notification_developer_period_emails', 0),
     '#element_validate' => array('email_notification_developer_validate_period'),
-    '#description' => t('Because time  (in hours - integer) is done sending errors (for activation of the switch and set the period during crown here: <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks  (ie 10 days - 1 week 3 days)). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
+    '#description' => t('Period (given in hours) at which will trigger functionality. This period will be available <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks (ie 10 days - 1 week 3 days). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
   );
   $form['email_notification_developer_emails_list_error'] = array(
     '#type' => 'textarea',
