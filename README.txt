@@ -16,8 +16,8 @@ Email notification developer
   Cheksboks "Activate functionality" - activates the functional check of the
   domain name change.
   In the field "The period of inspection" is set during functional activation
-  after running crown. Functionality will be triggered only when the elapsed time
-  equals or is greater than the start of last danyho functional.
+  after running crown. Functionality will be triggered only when the elapsed 
+  time equals or is greater than the start of last danyho functional.
   The field "Domain list" - contains a list of available domains used.
   The field "Emails list" - right up to 10 email adresses, which will receive
   information about changing the domain name of the resource.
@@ -26,12 +26,11 @@ Email notification developer
   We specify the following options:
   Cheksboks "Activate functionality" - activates the functional check error
   In the field "The period of inspection" is set during functional activation
-  after running crown. Functionality will be triggered only when the elapsed time
-  equals or is greater than the start of last danyho functional.
+  after running crown. Functionality will be triggered only when the elapsed
+  time equals or is greater than the start of last danyho functional.
   logs on the site, and if they detect inform developers about them.
   The field "Emails list" - right up to 10 email adresses, which will receive
   information about changing the domain name of the resource.
   
   Email messages for the domain name change and error messages are independent
   and are sent separately.
-  

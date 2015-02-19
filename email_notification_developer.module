@@ -139,7 +139,7 @@ function email_notification_developer_config_domain($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('The period of inspection'),
     '#required' => TRUE,
-    '#default_value' => variable_get('email_notification_developer_period_domain', 0),
+    '#default_value' => variable_get('email_notification_developer_period_domain', 1),
     '#element_validate' => array('email_notification_developer_validate_period'),
     '#description' => t('Period (given in hours) at which will trigger functionality. This period will be available <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks (ie 10 days - 1 week 3 days). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
   );
@@ -180,7 +180,7 @@ function email_notification_developer_config_error() {
     '#type' => 'textfield',
     '#title' => t('The period of inspection'),
     '#required' => TRUE,
-    '#default_value' => variable_get('email_notification_developer_period_emails', 0),
+    '#default_value' => variable_get('email_notification_developer_period_emails', 1),
     '#element_validate' => array('email_notification_developer_validate_period'),
     '#description' => t('Period (given in hours) at which will trigger functionality. This period will be available <a target= "_blank" href="@url" >Cron</a> period shown in the format hours, days, weeks (ie 10 days - 1 week 3 days). Numerical maximum period of 30 days.', array('@url' => url($url_cron))),
   );
@@ -259,8 +259,11 @@ function email_notification_developer_validate_domain($element, &$form_state, $f
  * Function email_notification_developer_validate_period().
  */
 function email_notification_developer_validate_period($element, &$form_state, $form) {
-  if (!preg_match('/^\d+$/i', $element['#value']) || $element['#value'] * 60 > 2592000) {
-    if ($element['#value'] * 60 > 2592000) {
+  if (empty($element['#value']) || !preg_match('/^\d+$/i', $element['#value']) || $element['#value'] * 60 > 2592000) {
+    if (empty($element['#value'])) {
+      form_error($element, t('Empty value period.'));
+    }
+    elseif ($element['#value'] * 60 > 2592000) {
       form_error($element, t('Introduced during 30 days.'));
     }
     else {
@@ -293,7 +296,7 @@ function email_notification_developer_check_domain() {
             drupal_mail('system', 'mail', $email, language_default(), array(
               'context' => array(
                 'subject' => t('Change domain (@domain)', array('@domain' => $base_root)),
-                'message' => t('Domain resource changed to (@domain)', array('@domain' => $base_root)),
+                'message' => t('Domain resource changed to - @domain', array('@domain' => $base_root)),
               ),
             ));
           }
@@ -321,8 +324,13 @@ function email_notification_developer_check_errors() {
       $bugs_array[] = trim(t($value->message, unserialize($value->variables)));
     }
   }
-  $bugs_array = array_unique($bugs_array);
-  $text_message = implode("\n\n", $bugs_array);
+  if (!empty($bugs_array)) {
+    $bugs_array = array_unique($bugs_array);
+    $text_message = implode("\n\n", $bugs_array);
+    if (!empty($text_message)) {
+      $text_message = strip_tags($text_message);
+    }
+  }
   $emails_list = variable_get('email_notification_developer_emails_list_error', '');
   if (!empty($emails_list) && !empty($text_message)) {
     $emails_array = preg_split("/\,|\r\n|\n/", $emails_list);
