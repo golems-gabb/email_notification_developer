@@ -11,7 +11,7 @@ Email notification developer
 
  Usage
  ------
-  On the Settings page admin/config/developer
+  On the Settings page admin/config/development/developer/domain
   We specify the following options:
   Cheksboks "Activate functionality" - activates the functional check of the
   domain name change.
@@ -22,7 +22,7 @@ Email notification developer
   The field "Emails list" - right up to 10 email adresses, which will receive
   information about changing the domain name of the resource.
 
-  On the Settings page admin/config/developer/error
+  On the Settings page admin/config/development/developer/error
   We specify the following options:
   Cheksboks "Activate functionality" - activates the functional check error
   In the field "The period of inspection" is set during functional activation

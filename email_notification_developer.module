@@ -10,19 +10,20 @@
  */
 function email_notification_developer_menu() {
   $items = array();
-  $items['admin/config/developer'] = array(
+  $items['admin/config/development/developer'] = array(
     'title' => 'Email notification developer settings',
+    'description' => 'Page Settings send messages about changing domain and errors.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('email_notification_developer_config_domain'),
     'access arguments' => array('administer site configuration'),
 
   );
-  $items['admin/config/developer/domain'] = array(
+  $items['admin/config/development/developer/domain'] = array(
     'title' => 'Domain notification settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => 0,
   );
-  $items['admin/config/developer/error'] = array(
+  $items['admin/config/development/developer/error'] = array(
     'title' => 'Error notification settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('email_notification_developer_config_error'),
@@ -34,34 +35,29 @@ function email_notification_developer_menu() {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter().
  */
-function email_notification_developer_form_alter(&$form, &$form_state, $form_id) {
-  if (!empty($form_id) && $form_id == 'system_cron_settings') {
-    $period_domain = variable_get(
-      'email_notification_developer_period_domain',
-      0
-    );
-    $period_emails = variable_get(
-      'email_notification_developer_period_emails',
-      0
-    );
-    if (!empty($form['cron']['cron_safe_threshold']['#options']) && (!empty($period_domain) || $period_emails)) {
-      if (!empty($period_domain)) {
-        $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
-          array(3600 * $period_domain),
-          'format_interval'
-        );
-      }
-      if (!empty($period_emails)) {
-        $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
-          array(3600 * $period_emails),
-          'format_interval'
-        );
-      }
-      ksort($form['cron']['cron_safe_threshold']['#options']);
-      reset($form['cron']['cron_safe_threshold']['#options']);
+function email_notification_developer_form_system_cron_settings_alter(&$form, &$form_state) {
+  $period_domain = variable_get('email_notification_developer_period_domain', 0);
+  $period_emails = variable_get(
+    'email_notification_developer_period_emails',
+    0
+  );
+  if (!empty($form['cron']['cron_safe_threshold']['#options']) && (!empty($period_domain) || $period_emails)) {
+    if (!empty($period_domain)) {
+      $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
+        array(3600 * $period_domain),
+        'format_interval'
+      );
     }
+    if (!empty($period_emails)) {
+      $form['cron']['cron_safe_threshold']['#options'] += drupal_map_assoc(
+        array(3600 * $period_emails),
+        'format_interval'
+      );
+    }
+    ksort($form['cron']['cron_safe_threshold']['#options']);
+    reset($form['cron']['cron_safe_threshold']['#options']);
   }
 }
 
@@ -122,12 +118,11 @@ function email_notification_developer_cron() {
 }
 
 /**
- * Callback email_notification_developer_config_domain().
+ * Page settings check domain.
  */
 function email_notification_developer_config_domain($form, &$form_state) {
-  global $base_root;
   $form = array();
-  $url_cron = $base_root . '/admin/config/system/cron';
+  $url_cron = 'admin/config/system/cron';
   $form['email_notification_developer_activate_domain'] = array(
     '#type' => 'checkbox',
     '#title' => t('Activate functionality'),
@@ -163,12 +158,11 @@ function email_notification_developer_config_domain($form, &$form_state) {
 }
 
 /**
- * Callback email_notification_developer_config_error().
+ * Page settings error messages.
  */
 function email_notification_developer_config_error() {
-  global $base_root;
   $form = array();
-  $url_cron = $base_root . '/admin/config/system/cron';
+  $url_cron = 'admin/config/system/cron';
   $form['email_notification_developer_activate_error'] = array(
     '#type' => 'checkbox',
     '#title' => t('Activate functionality'),
@@ -196,7 +190,7 @@ function email_notification_developer_config_error() {
 }
 
 /**
- * Function email_notification_developer_validate_email().
+ * Email validation function.
  */
 function email_notification_developer_validate_email($element, &$form_state, $form) {
   $arrays_email = preg_split("/\,|\r\n|\n/", $element['#value']);
@@ -227,7 +221,7 @@ function email_notification_developer_validate_email($element, &$form_state, $fo
 }
 
 /**
- * Function email_notification_developer_validate_domain().
+ * Domain validation function.
  */
 function email_notification_developer_validate_domain($element, &$form_state, $form) {
   $arrays_domain = preg_split("/\,|\r\n|\n/", $element['#value']);
@@ -256,7 +250,7 @@ function email_notification_developer_validate_domain($element, &$form_state, $f
 }
 
 /**
- * Function email_notification_developer_validate_period().
+ * Function validation period over which operated functional module.
  */
 function email_notification_developer_validate_period($element, &$form_state, $form) {
   if (empty($element['#value']) || !preg_match('/^\d+$/i', $element['#value']) || $element['#value'] * 60 > 2592000) {
@@ -273,7 +267,7 @@ function email_notification_developer_validate_period($element, &$form_state, $f
 }
 
 /**
- * Function email_notification_developer_check_domain().
+ * Implements functionality reset message domain.
  */
 function email_notification_developer_check_domain() {
   global $base_root;
@@ -307,7 +301,7 @@ function email_notification_developer_check_domain() {
 }
 
 /**
- * Function email_notification_developer_check_errors().
+ * Implements functionality notification errors.
  */
 function email_notification_developer_check_errors() {
   global $base_root;
@@ -352,7 +346,7 @@ function email_notification_developer_check_errors() {
 }
 
 /**
- * Function email_notification_developer_run_newsletter().
+ * Check availability startup functional module.
  */
 function email_notification_developer_run_newsletter($start_date, $qualifier) {
   if (!empty($start_date) && $start_date <= date('Y-m-d H:i:s', (time()))) {
