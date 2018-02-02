@@ -13,22 +13,25 @@ function email_notification_developer_menu() {
   $items['admin/config/development/developer'] = array(
     'title' => 'Email notification developer settings',
     'description' => 'Page Settings send messages about changing domain and errors.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('email_notification_developer_config_domain'),
-    'access arguments' => array('administer site configuration'),
-
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
   );
   $items['admin/config/development/developer/domain'] = array(
     'title' => 'Domain notification settings',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('email_notification_developer_config_domain'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 1,
   );
   $items['admin/config/development/developer/error'] = array(
     'title' => 'Error notification settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('email_notification_developer_config_error'),
     'access arguments' => array('administer site configuration'),
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_NORMAL_ITEM,
     'weight' => 1,
   );
   return $items;
@@ -152,7 +155,7 @@ function email_notification_developer_config_domain($form, &$form_state) {
     '#required' => TRUE,
     '#default_value' => variable_get('email_notification_developer_emails_list_domain', ''),
     '#element_validate' => array('email_notification_developer_validate_email'),
-    '#description' => t('Enter up to ten email adresses Enter through the separator or comma, without blank lines.'),
+    '#description' => t('Enter up to ten email addresses Enter through the separator or comma, without blank lines.'),
   );
   return system_settings_form($form);
 }
@@ -184,7 +187,7 @@ function email_notification_developer_config_error() {
     '#required' => TRUE,
     '#default_value' => variable_get('email_notification_developer_emails_list_error', ''),
     '#element_validate' => array('email_notification_developer_validate_email'),
-    '#description' => t('Enter up to ten email adresses Enter through the separator or comma, without blank lines.'),
+    '#description' => t('Enter up to ten email addresses Enter through the separator or comma, without blank lines.'),
   );
   return system_settings_form($form);
 }
@@ -212,7 +215,7 @@ function email_notification_developer_validate_email($element, &$form_state, $fo
       }
     }
     else {
-      form_error($element, t('Maximum 10 email adresses to send.'));
+      form_error($element, t('Maximum 10 email addresses to send.'));
     }
   }
   else {
