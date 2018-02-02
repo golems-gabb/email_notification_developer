@@ -1,0 +1,6 @@
+name: "Email notification developer"
+description: "Posts in Email Error resource or domain name change."
+type: module
+package: Other
+core: 8.x
+configure: email_nd.settings.domain

@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * @file
+ * Contains install and uninstall functions for Email notification developer.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function email_nd_install() {
+  global $base_url;
+  $domain = preg_replace('/https*\:\/\//', '', $base_url);
+  if (!empty($domain)) {
+    \Drupal::configFactory()
+      ->getEditable('email_nd.setting')
+      ->set('list_domain', $domain)
+      ->save();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function email_nd_uninstall() {
+  \Drupal::config('email_nd.setting')->delete();
+}

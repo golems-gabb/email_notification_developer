@@ -1,0 +1,36 @@
+email_nd.setting:
+  type: config_object
+  mapping:
+    activate_error:
+      type: boolean
+      label: "TODO Set label of variable"
+    activate_domain:
+      type: boolean
+      label: "TODO Set label of variable"
+    period_emails:
+      type: integer
+      label: "TODO Set label of variable"
+    period_domain:
+      type: integer
+      label: "TODO Set label of variable"
+    cron_last:
+      type: integer
+      label: "TODO Set label of variable"
+    emails_list_error:
+      type: sequence
+      label: "Error email list"
+      sequence:
+        type: email
+        label: "Error email"
+    emails_list_domain:
+      type: sequence
+      label: "Domain email list"
+      sequence:
+        type: email
+        label: "Domain email"
+    list_domain:
+      type: sequence
+      label: "Array list of domains"
+      sequence:
+        type: email
+        label: "Domain"

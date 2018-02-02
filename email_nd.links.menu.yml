@@ -1,0 +1,6 @@
+email_nd.menu_link.default:
+  title: 'Email notification developer settings'
+  description: 'Page Settings send messages about changing domain and errors.'
+  parent: system.admin_config_development
+  route_name: email_nd.settings.domain
+  weight: 100

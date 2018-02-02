@@ -1,0 +1,10 @@
+email_nd.local_task.domain:
+  route_name: email_nd.settings.domain
+  title: 'Domain'
+  base_route: email_nd.settings.domain
+  weight: 100
+email_nd.local_task.errors:
+  route_name: email_nd.settings.errors
+  title: 'Errors'
+  base_route: email_nd.settings.domain
+  weight: 150

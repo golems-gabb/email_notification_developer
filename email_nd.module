@@ -1,0 +1,214 @@
+<?php
+
+/**
+ * @file
+ * Implements the necessary hooks for message reception error and change domain.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for system_cron_settings form.
+ */
+function email_nd_form_system_cron_settings_alter(array &$form, FormStateInterface &$form_state) {
+  $config = \Drupal::config('email_nd.setting');
+  /** @var \Drupal\Core\Datetime\DateFormatterInterface $dateFormatter */
+  $dateFormatter = \Drupal::service('date.formatter');
+  $period_domain = $config->get('period_domain');
+  $period_emails = $config->get('period_emails');
+  if (!empty($form['cron']['cron_safe_threshold']['#options']) && (!empty($period_domain) || $period_emails)) {
+    if (!empty($period_domain)) {
+      $form['cron']['cron_safe_threshold']['#options'] += array_map(
+        [$dateFormatter, 'format_interval'],
+        [3600 * $period_domain]
+      );
+    }
+    if (!empty($period_emails)) {
+      $form['cron']['cron_safe_threshold']['#options'] += array_map(
+        [$dateFormatter, 'format_interval'],
+        [3600 * $period_emails]
+      );
+    }
+    ksort($form['cron']['cron_safe_threshold']['#options']);
+    reset($form['cron']['cron_safe_threshold']['#options']);
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function email_nd_cron() {
+  $config = \Drupal::configFactory()->getEditable('email_nd.setting');
+  $activate_domain = $config->get('activate_domain');
+  $activate_error = $config->get('activate_error');
+  if (!empty($activate_domain) || !empty($activate_error)) {
+    $module_cron_last = $config->get('cron_last');
+    if (empty($module_cron_last)) {
+      $config->set('cron_last', time())->save();
+      email_nd_check_errors();
+      email_nd_check_domain();
+    }
+    else {
+      $p_domain = $config->get('period_domain');
+      $p_error = $config->get('period_emails');
+      if (!empty($module_cron_last) && (!empty($p_domain) || !empty($p_error))) {
+        $end = date('Y-m-d H:i:s', $module_cron_last);
+        $begin = new DateTime($end);
+        if (!empty($begin) && is_object($begin)) {
+          $begin_domain = $begin->modify('+' . $p_domain . ' minute');
+          $begin_error = $begin->modify('+' . $p_error . ' minute');
+          if (!empty($begin_domain->date)) {
+            $start_date_domain = $begin_domain->date;
+          }
+          if (!empty($begin_error->date)) {
+            $start_date_error = $begin_error->date;
+          }
+        }
+        else {
+          $start_date_domain = date(
+            'Y-m-d H:i:s',
+            $module_cron_last + $p_domain * 3600
+          );
+          $start_date_error = date(
+            'Y-m-d H:i:s',
+            $module_cron_last + $p_error * 3600
+          );
+        }
+        if (!empty($start_date_error) && !empty($activate_error)) {
+          email_nd_run_newsletter($start_date_error, 'e');
+        }
+        if (!empty($start_date_domain) && !empty($activate_domain)) {
+          email_nd_run_newsletter($start_date_domain, 'd');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements functionality reset message domain.
+ */
+function email_nd_check_domain() {
+  global $base_root;
+  $config = \Drupal::config('email_nd.setting');
+  $emails_list = $config->get('emails_list_domain');
+  $list_domain = $config->get('list_domain');
+  $site_domains_array = [
+    $base_root,
+    preg_replace('/https*\:\/\/(www.)?/i', '', $base_root),
+  ];
+  if (!empty($emails_list) && !empty($list_domain) && !empty($site_domains_array)) {
+    $isset_domain = array_intersect($list_domain, $site_domains_array);
+    if (empty($isset_domain)) {
+      $emails_count = count($emails_list);
+      if ($emails_count >= 1) {
+        /** @var \Drupal\Core\Language\LanguageDefault $languageDefault */
+        $languageDefault = \Drupal::service('language.default');
+        for ($count = 0; $count < $emails_count; $count++) {
+          $email = $emails_list[$count];
+          if (!empty($email)) {
+            /** @var \Drupal\Core\Mail\MailManager $mail_manager */
+            $mail_manager = \Drupal::service('plugin.manager.mail');
+            $mail_manager->mail(
+              'system',
+              'mail',
+              $email,
+              $languageDefault->get(),
+              [
+                'context' => [
+                  'subject' => t('Change domain (@domain)', ['@domain' => $base_root]),
+                  'message' => t('Domain resource changed to - @domain', ['@domain' => $base_root]),
+                ],
+              ]
+            );
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements functionality notification errors.
+ */
+function email_nd_check_errors() {
+  global $base_root;
+  $bugs = \Drupal::database()->select('watchdog', 'w');
+  $bugs->fields('w', ['wid', 'message', 'variables', 'severity', 'timestamp']);
+  $group = $bugs->orConditionGroup()
+    ->condition('type', 'php')
+    ->condition('type', 'email');
+  $bugs->condition($group);
+  $bugs->orderBy('w.timestamp', 'DESC');
+  $result = $bugs->execute()->fetchAll();
+  if (!empty($result)) {
+    foreach ($result as $value) {
+      $bugs_array[] = trim(t(
+        '@message: @variables',
+        [
+          '@message' => $value->message,
+          '@variables' => unserialize($value->variables),
+        ]
+      ));
+    }
+  }
+  if (!empty($bugs_array)) {
+    $bugs_array = array_unique($bugs_array);
+    $text_message = implode("\n\n", $bugs_array);
+    if (!empty($text_message)) {
+      $text_message = strip_tags($text_message);
+    }
+  }
+  $emails_array = \Drupal::config('email_nd.setting')->get('emails_list_error');
+  if (!empty($emails_array) && !empty($text_message)) {
+    $emails_count = count($emails_array);
+    if ($emails_count >= 1) {
+      /** @var \Drupal\Core\Language\LanguageDefault $languageDefault */
+      $languageDefault = \Drupal::service('language.default');
+      for ($count = 0; $count < $emails_count; $count++) {
+        $email = $emails_array[$count];
+        if (!empty($email)) {
+          /** @var \Drupal\Core\Mail\MailManager $mail_manager */
+          $mail_manager = \Drupal::service('plugin.manager.mail');
+          $mail_manager->mail(
+            'system',
+            'mail',
+            $email,
+            $languageDefault->get(),
+            [
+              'context' => [
+                'subject' => t(
+                  'Errors resource: @domain',
+                  ['@domain' => $base_root]
+                ),
+                'message' => $text_message,
+              ],
+            ]
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Check availability startup functional module.
+ *
+ * @param int $start_date
+ *   Timestamp.
+ * @param string $qualifier
+ *   Indicator.
+ */
+function email_nd_run_newsletter($start_date, $qualifier) {
+  if (!empty($start_date) && $start_date <= date('Y-m-d H:i:s', (time()))) {
+    \Drupal::configFactory()->getEditable('email_nd.setting')
+      ->set('cron_last', time())
+      ->save();
+    if ($qualifier == 'e') {
+      email_nd_check_errors();
+    }
+    if ($qualifier == 'd') {
+      email_nd_check_domain();
+    }
+  }
+}

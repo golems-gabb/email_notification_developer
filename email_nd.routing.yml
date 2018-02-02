@@ -1,0 +1,14 @@
+email_nd.settings.domain:
+  path: 'admin/config/development/developer/domain'
+  defaults:
+    _form: 'Drupal\email_nd\Form\DomainSettingsForm'
+    _title: 'Domain notification settings'
+  requirements:
+    _permission: 'administer site configuration'
+email_nd.settings.errors:
+  path: 'admin/config/development/developer/errors'
+  defaults:
+    _form: 'Drupal\email_nd\Form\ErrorSettingsForm'
+    _title: 'Error notification settings'
+  requirements:
+    _permission: 'administer site configuration'
