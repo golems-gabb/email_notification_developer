@@ -41,7 +41,10 @@ function email_notification_developer_menu() {
  * Implements hook_form_FORM_ID_alter().
  */
 function email_notification_developer_form_system_cron_settings_alter(&$form, &$form_state) {
-  $period_domain = variable_get('email_notification_developer_period_domain', 0);
+  $period_domain = variable_get(
+    'email_notification_developer_period_domain',
+    0
+  );
   $period_emails = variable_get(
     'email_notification_developer_period_emails',
     0

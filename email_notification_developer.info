@@ -2,4 +2,4 @@ name= Email notification developer
 description = Posts in Email Error resource or domain name change.
 core = 7.x
 package = Other
-configure = admin/config/developer
+configure = admin/config/development/developer
