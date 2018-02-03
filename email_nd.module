@@ -103,17 +103,17 @@ function email_nd_check_domain() {
       $emails_count = count($emails_list);
       if ($emails_count >= 1) {
         /** @var \Drupal\Core\Language\LanguageDefault $languageDefault */
-        $languageDefault = \Drupal::service('language.default');
+        $languageDefault = \Drupal::service('language.default')->get();
         for ($count = 0; $count < $emails_count; $count++) {
           $email = $emails_list[$count];
-          if (!empty($email)) {
+          if (!empty($email) && !empty($languageDefault)) {
             /** @var \Drupal\Core\Mail\MailManager $mail_manager */
             $mail_manager = \Drupal::service('plugin.manager.mail');
             $mail_manager->mail(
               'system',
               'mail',
               $email,
-              $languageDefault->get(),
+              $languageDefault->getId(),
               [
                 'context' => [
                   'subject' => t('Change domain (@domain)', ['@domain' => $base_root]),
@@ -143,13 +143,7 @@ function email_nd_check_errors() {
   $result = $bugs->execute()->fetchAll();
   if (!empty($result)) {
     foreach ($result as $value) {
-      $bugs_array[] = trim(t(
-        '@message: @variables',
-        [
-          '@message' => $value->message,
-          '@variables' => unserialize($value->variables),
-        ]
-      ));
+      $bugs_array[] = trim(t($value->message, unserialize($value->variables)));
     }
   }
   if (!empty($bugs_array)) {
@@ -164,17 +158,17 @@ function email_nd_check_errors() {
     $emails_count = count($emails_array);
     if ($emails_count >= 1) {
       /** @var \Drupal\Core\Language\LanguageDefault $languageDefault */
-      $languageDefault = \Drupal::service('language.default');
+      $languageDefault = \Drupal::service('language.default')->get();
       for ($count = 0; $count < $emails_count; $count++) {
         $email = $emails_array[$count];
-        if (!empty($email)) {
+        if (!empty($email) && !empty($languageDefault)) {
           /** @var \Drupal\Core\Mail\MailManager $mail_manager */
           $mail_manager = \Drupal::service('plugin.manager.mail');
           $mail_manager->mail(
             'system',
             'mail',
             $email,
-            $languageDefault->get(),
+            $languageDefault->getId(),
             [
               'context' => [
                 'subject' => t(
